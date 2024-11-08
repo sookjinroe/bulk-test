@@ -32,6 +32,13 @@
 
             <div class="form-group">
                 <label for="system-message">System Message:</label>
+                <div class="template-controls">
+                    <select id="template-select">
+                        <option value="">템플릿 선택...</option>
+                    </select>
+                    <button id="save-template" class="secondary-btn">현재 메시지 저장</button>
+                    <button id="delete-template" class="secondary-btn">템플릿 삭제</button>
+                </div>
                 <textarea id="system-message" rows="4" placeholder="시스템 메시지를 입력하세요"></textarea>
             </div>
 
@@ -48,6 +55,25 @@
             <h3>Processing Status</h3>
             <div id="status-message"></div>
         </section>
+    </div>
+
+    <!-- 템플릿 저장 모달 -->
+    <div id="template-modal" class="modal">
+        <div class="modal-content">
+            <h3>시스템 메시지 템플릿 저장</h3>
+            <div class="form-group">
+                <label for="template-name">템플릿 이름:</label>
+                <input type="text" id="template-name" placeholder="템플릿 이름을 입력하세요">
+            </div>
+            <div class="form-group">
+                <label>메시지 내용:</label>
+                <div id="template-content-preview"></div>
+            </div>
+            <div class="modal-buttons">
+                <button id="save-template-confirm" class="primary-btn">저장</button>
+                <button id="cancel-template-save" class="secondary-btn">취소</button>
+            </div>
+        </div>
     </div>
 
     <script src="script.js"></script>

@@ -1,3 +1,146 @@
+const STORAGE_KEYS = {
+    API_KEY: 'openai_batch_api_key',
+    MODEL: 'openai_batch_model',
+    TEMPERATURE: 'openai_batch_temperature',
+    MAX_TOKENS: 'openai_batch_max_tokens',
+    TEMPLATES: 'openai_batch_templates'
+};
+
+// DOM 요소
+const elements = {
+    apiKey: document.getElementById('api-key'),
+    model: document.getElementById('model'),
+    temperature: document.getElementById('temperature'),
+    maxTokens: document.getElementById('max-tokens'),
+    systemMessage: document.getElementById('system-message'),
+    inputCsv: document.getElementById('input-csv'),
+    downloadBtn: document.getElementById('download-btn'),
+    templateSelect: document.getElementById('template-select'),
+    saveTemplateBtn: document.getElementById('save-template'),
+    deleteTemplateBtn: document.getElementById('delete-template'),
+    templateModal: document.getElementById('template-modal'),
+    templateName: document.getElementById('template-name'),
+    templatePreview: document.getElementById('template-content-preview'),
+    saveTemplateConfirm: document.getElementById('save-template-confirm'),
+    cancelTemplateSave: document.getElementById('cancel-template-save')
+};
+
+// 설정 저장 함수
+function saveSettings() {
+    localStorage.setItem(STORAGE_KEYS.API_KEY, elements.apiKey.value);
+    localStorage.setItem(STORAGE_KEYS.MODEL, elements.model.value);
+    localStorage.setItem(STORAGE_KEYS.TEMPERATURE, elements.temperature.value);
+    localStorage.setItem(STORAGE_KEYS.MAX_TOKENS, elements.maxTokens.value);
+}
+
+// 설정 불러오기 함수
+function loadSettings() {
+    elements.apiKey.value = localStorage.getItem(STORAGE_KEYS.API_KEY) || '';
+    elements.model.value = localStorage.getItem(STORAGE_KEYS.MODEL) || 'gpt-3.5-turbo-0125';
+    elements.temperature.value = localStorage.getItem(STORAGE_KEYS.TEMPERATURE) || '0.7';
+    elements.maxTokens.value = localStorage.getItem(STORAGE_KEYS.MAX_TOKENS) || '1000';
+    
+    loadTemplates();
+}
+
+// 템플릿 관리 함수들
+function loadTemplates() {
+    const templates = JSON.parse(localStorage.getItem(STORAGE_KEYS.TEMPLATES) || '[]');
+    elements.templateSelect.innerHTML = '<option value="">템플릿 선택...</option>';
+    templates.forEach(template => {
+        const option = document.createElement('option');
+        option.value = template.name;
+        option.textContent = template.name;
+        elements.templateSelect.appendChild(option);
+    });
+}
+
+function saveTemplate(name, content) {
+    const templates = JSON.parse(localStorage.getItem(STORAGE_KEYS.TEMPLATES) || '[]');
+    const existingIndex = templates.findIndex(t => t.name === name);
+    
+    if (existingIndex >= 0) {
+        templates[existingIndex].content = content;
+    } else {
+        templates.push({ name, content });
+    }
+    
+    localStorage.setItem(STORAGE_KEYS.TEMPLATES, JSON.stringify(templates));
+    loadTemplates();
+}
+
+function deleteTemplate(name) {
+    const templates = JSON.parse(localStorage.getItem(STORAGE_KEYS.TEMPLATES) || '[]');
+    const newTemplates = templates.filter(t => t.name !== name);
+    localStorage.setItem(STORAGE_KEYS.TEMPLATES, JSON.stringify(newTemplates));
+    loadTemplates();
+}
+
+// 이벤트 리스너
+function setupEventListeners() {
+    // 설정 저장
+    elements.apiKey.addEventListener('change', saveSettings);
+    elements.model.addEventListener('change', saveSettings);
+    elements.temperature.addEventListener('change', saveSettings);
+    elements.maxTokens.addEventListener('change', saveSettings);
+    
+    // 템플릿 선택
+    elements.templateSelect.addEventListener('change', (e) => {
+        if (!e.target.value) return;
+        
+        const templates = JSON.parse(localStorage.getItem(STORAGE_KEYS.TEMPLATES) || '[]');
+        const selected = templates.find(t => t.name === e.target.value);
+        if (selected) {
+            elements.systemMessage.value = selected.content;
+        }
+    });
+    
+    // 템플릿 저장 버튼
+    elements.saveTemplateBtn.addEventListener('click', () => {
+        if (!elements.systemMessage.value.trim()) {
+            alert('시스템 메시지를 입력해주세요.');
+            return;
+        }
+        
+        elements.templatePreview.textContent = elements.systemMessage.value;
+        elements.templateModal.style.display = 'block';
+    });
+    
+    // 템플릿 저장 확인
+    elements.saveTemplateConfirm.addEventListener('click', () => {
+        const name = elements.templateName.value.trim();
+        if (!name) {
+            alert('템플릿 이름을 입력해주세요.');
+            return;
+        }
+        
+        saveTemplate(name, elements.systemMessage.value);
+        elements.templateModal.style.display = 'none';
+        elements.templateName.value = '';
+    });
+    
+    // 템플릿 삭제
+    elements.deleteTemplateBtn.addEventListener('click', () => {
+        const selectedTemplate = elements.templateSelect.value;
+        if (!selectedTemplate) {
+            alert('삭제할 템플릿을 선택해주세요.');
+            return;
+        }
+        
+        if (confirm(`"${selectedTemplate}" 템플릿을 삭제하시겠습니까?`)) {
+            deleteTemplate(selectedTemplate);
+            elements.systemMessage.value = '';
+            elements.templateSelect.value = '';
+        }
+    });
+    
+    // 모달 닫기
+    elements.cancelTemplateSave.addEventListener('click', () => {
+        elements.templateModal.style.display = 'none';
+        elements.templateName.value = '';
+    });
+}
+
 // 전역 변수로 입력 데이터 저장
 let inputContents = [];
 let batchId = null;
@@ -235,3 +378,8 @@ function downloadCsv(content) {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadSettings();
+    setupEventListeners();
+});
